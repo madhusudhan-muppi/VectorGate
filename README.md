@@ -184,3 +184,53 @@ Pop-Location
 ```
 
 The dashboard visualizes observed VectorGate detection activity only. It does not display dengue risk, infection risk, or species identification. Synthetic DEMO nodes and detections are labelled for presentation use, and missing classification confidence is never fabricated.
+
+## Stage 5: classification and UNKNOWN rejection
+
+Stage 5 adds an optional, explicitly synthetic classification layer after DSP:
+
+```text
+FlightEventResult -> stable feature vector -> cached Random Forest -> class or UNKNOWN -> SQLite/dashboard
+```
+
+The exact feature order is:
+
+```text
+dominant_frequency_hz,
+second_harmonic_ratio,
+third_harmonic_ratio,
+rms,
+peak_to_peak,
+spectral_energy,
+estimated_snr_db,
+event_duration_seconds
+```
+
+Node ID, timestamps, coordinates, and environmental context are not classifier features. Temperature and humidity remain contextual metadata.
+
+### Synthetic demonstration model
+
+Install the added `scikit-learn` dependency and train the deterministic demonstration artifact:
+
+```powershell
+python -m software.classifier.train_demo
+```
+
+This creates `software/classifier/artifacts/vectorgate_demo_rf.pkl` and its JSON metadata. It uses overlapping artificial `DEMO_CLASS_A`, `DEMO_CLASS_B`, and `DEMO_CLASS_C` distributions. The model version is `vectorgate-demo-rf-v1`, and the default UNKNOWN threshold is `0.62`.
+
+Classification is disabled by default to preserve Stage 3 compatibility. Enable it for a local demonstration with:
+
+```powershell
+$env:VECTORGATE_CLASSIFIER_ENABLED = "1"
+python -m uvicorn backend.app.main:app --reload
+```
+
+Inspect readiness and metadata at `GET /api/v1/classifier/status`. The endpoint labels the training data as `synthetic_demo` and exposes synthetic validation metrics only.
+
+If the model confidence is below the threshold, the feature vector is invalid, estimated SNR is below the quality floor, or the artifact is unavailable, the result is `UNKNOWN`. UNKNOWN means the current model lacks sufficient evidence for one of its artificial known classes; it does not mean another species was identified. When classification is disabled or unavailable, existing detections remain valid with nullable `predicted_class`, `confidence`, and `model_version`.
+
+The dashboard shows `DEMO CLASSIFIER`, the model version, synthetic-model labeling, and filters for `ALL`, `CLASSIFIED`, `UNKNOWN`, and `UNCLASSIFIED`. It never converts synthetic labels into mosquito species names.
+
+### Path to biological validation
+
+A deployment classifier would require recordings from known mosquito specimens, expert or entomologist-confirmed labels, representative environmental conditions, separated train/validation/test data, evaluation across devices/locations/time, and calibration plus domain-shift testing. Current Stage 5 validates the software/ML pipeline and open-set rejection architecture, not species-identification accuracy.

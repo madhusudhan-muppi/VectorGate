@@ -4,6 +4,7 @@ import type { ActivityBucket, ApiState } from '../types'
 
 const initialState: ApiState = {
   health: null,
+  classifier: null,
   summary: null,
   nodes: [],
   detections: [],
@@ -20,8 +21,9 @@ export function useDashboardData(selectedNodeId: string | null) {
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
     try {
-      const [health, summary, nodes, detections] = await Promise.all([
+      const [health, classifier, summary, nodes, detections] = await Promise.all([
         api.health(signal),
+        api.classifier(signal),
         api.summary(signal),
         api.nodes(signal),
         api.detections(signal),
@@ -32,7 +34,7 @@ export function useDashboardData(selectedNodeId: string | null) {
         window.setTimeout(() => setNewDetectionIds(new Set()), 1600)
       }
       seenIds.current = new Set(detections.map((item) => item.id))
-      setState((previous) => ({ ...previous, health, summary, nodes, detections, loading: false, error: null, lastRefresh: new Date() }))
+      setState((previous) => ({ ...previous, health, classifier, summary, nodes, detections, loading: false, error: null, lastRefresh: new Date() }))
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return
       setState((previous) => ({ ...previous, loading: false, error: error instanceof Error ? error.message : 'Unknown backend error' }))

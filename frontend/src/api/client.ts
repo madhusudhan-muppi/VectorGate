@@ -1,4 +1,4 @@
-import type { ActivityBucket, Detection, Health, MapNode, Summary } from '../types'
+import type { ActivityBucket, ClassifierStatus, Detection, Health, MapNode, Summary } from '../types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
 
@@ -27,6 +27,7 @@ async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
 export const api = {
   baseUrl: API_BASE_URL,
   health: (signal?: AbortSignal) => request<Health>('/api/v1/health', signal),
+  classifier: (signal?: AbortSignal) => request<ClassifierStatus>('/api/v1/classifier/status', signal),
   summary: (signal?: AbortSignal) => request<Summary>('/api/v1/stats/summary', signal),
   nodes: (signal?: AbortSignal) => request<MapNode[]>('/api/v1/map/nodes', signal),
   detections: (signal?: AbortSignal) => request<Detection[]>('/api/v1/detections?limit=50', signal),

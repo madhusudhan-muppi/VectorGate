@@ -10,6 +10,7 @@ from ..models import Detection
 from ..repositories.detections import create_detection, get_detection, list_detections
 from ..repositories.nodes import get_node
 from ..schemas import DetectionCreate, DetectionResponse
+from ..services.classifier import classify_detection
 from ..services.time import ensure_utc, utc_now
 
 router = APIRouter(prefix="/detections", tags=["detections"])
@@ -19,7 +20,11 @@ router = APIRouter(prefix="/detections", tags=["detections"])
 def ingest_detection(payload: DetectionCreate, db: Session = Depends(get_db)) -> Detection:
     if get_node(db, payload.node_id) is None:
         raise HTTPException(status_code=404, detail="node not found")
-    detection = Detection(**payload.model_dump(), received_at=utc_now())
+    values = payload.model_dump()
+    classification = classify_detection(values)
+    if classification is not None:
+        values.update(classification)
+    detection = Detection(**values, received_at=utc_now())
     return create_detection(db, detection)
 
 

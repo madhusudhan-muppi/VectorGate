@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 def client(tmp_path, monkeypatch):
     database_path = tmp_path / "test.db"
     from backend.app.main import create_app
+    monkeypatch.delenv("VECTORGATE_CLASSIFIER_ENABLED", raising=False)
 
     with TestClient(create_app(f"sqlite:///{database_path}")) as test_client:
         yield test_client

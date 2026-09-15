@@ -3,6 +3,18 @@ export type Health = {
   database: string
 }
 
+export type ClassifierStatus = {
+  enabled: boolean
+  loaded: boolean
+  model_version: string | null
+  model_type: string | null
+  training_data_type: string | null
+  unknown_threshold: number | null
+  classes: string[]
+  synthetic_validation_metrics?: { label: string; accuracy: number; macro_f1: number; rejected_as_unknown_at_threshold: number }
+  load_error?: string | null
+}
+
 export type Summary = {
   total_nodes: number
   active_nodes: number
@@ -52,6 +64,7 @@ export type ActivityBucket = {
 
 export type ApiState = {
   health: Health | null
+  classifier: ClassifierStatus | null
   summary: Summary | null
   nodes: MapNode[]
   detections: Detection[]

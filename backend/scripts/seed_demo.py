@@ -10,6 +10,7 @@ from sqlalchemy import select
 from backend.app.database import SessionLocal, init_db
 from backend.app.models import Detection, Node
 from backend.app.services.time import utc_now
+from backend.app.services.classifier import classify_detection
 
 DEMO_NODES = [
     ("DEMO-MARINA", "DEMO / Marina edge", 13.0500, 80.2824, "DEMO / Marina Beach public landmark"),
@@ -22,24 +23,32 @@ DEMO_NODES = [
 
 
 def _detection(node_id: str, recorded_at, frequency: float, amplitude: float, index: int) -> Detection:
+    values = {
+        "node_id": node_id,
+        "recorded_at": recorded_at,
+        "dominant_frequency_hz": frequency,
+        "event_duration_seconds": 0.18 + (index % 4) * 0.04,
+        "dominant_magnitude": amplitude,
+        "second_harmonic_ratio": 0.22 + (index % 3) * 0.04,
+        "third_harmonic_ratio": 0.08 + (index % 2) * 0.03,
+        "rms": amplitude * 0.55,
+        "peak_to_peak": amplitude * 2.1,
+        "spectral_energy": amplitude * amplitude * 1.4,
+        "estimated_snr_db": 13.0 + (index % 5) * 2.2,
+        "temperature_c": 23.5 + (index % 4) * 0.7,
+        "humidity_percent": 62.0 + (index % 5) * 2.0,
+        "predicted_class": None,
+        "confidence": None,
+        "model_version": None,
+    }
+    classification = classify_detection(values)
+    if classification is not None:
+        values.update(classification)
     return Detection(
-        node_id=node_id,
-        recorded_at=recorded_at,
+        node_id=values["node_id"],
+        recorded_at=values["recorded_at"],
         received_at=recorded_at + timedelta(seconds=2),
-        dominant_frequency_hz=frequency,
-        event_duration_seconds=0.18 + (index % 4) * 0.04,
-        dominant_magnitude=amplitude,
-        second_harmonic_ratio=0.22 + (index % 3) * 0.04,
-        third_harmonic_ratio=0.08 + (index % 2) * 0.03,
-        rms=amplitude * 0.55,
-        peak_to_peak=amplitude * 2.1,
-        spectral_energy=amplitude * amplitude * 1.4,
-        estimated_snr_db=13.0 + (index % 5) * 2.2,
-        temperature_c=23.5 + (index % 4) * 0.7,
-        humidity_percent=62.0 + (index % 5) * 2.0,
-        predicted_class=None,
-        confidence=None,
-        model_version=None,
+        **{key: values[key] for key in ("dominant_frequency_hz", "event_duration_seconds", "dominant_magnitude", "second_harmonic_ratio", "third_harmonic_ratio", "rms", "peak_to_peak", "spectral_energy", "estimated_snr_db", "temperature_c", "humidity_percent", "predicted_class", "confidence", "model_version")},
     )
 
 
@@ -81,7 +90,7 @@ def seed_demo(reset: bool = False) -> int:
         total = 0
         for node_index, ((node_id, *_), count) in enumerate(zip(DEMO_NODES, counts, strict=True)):
             for event_index in range(count):
-                hours_ago = 0.25 + ((event_index * 17 + node_index * 11) % 220) / 60
+                hours_ago = 0.25 + ((event_index * 17 + node_index * 11) % 96)
                 recorded_at = now - timedelta(hours=hours_ago)
                 db.add(_detection(node_id, recorded_at, frequencies[node_index], 0.55 + (event_index % 4) * 0.08, event_index))
                 total += 1

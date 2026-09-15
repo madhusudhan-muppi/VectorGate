@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import configure_database, init_db
-from .routes import detections, health, nodes, stats
+from .routes import classifier, detections, health, nodes, stats
 
 
 def create_app(database_url: str | None = None) -> FastAPI:
@@ -49,6 +49,7 @@ def create_app(database_url: str | None = None) -> FastAPI:
     app.include_router(nodes.router, prefix="/api/v1")
     app.include_router(detections.router, prefix="/api/v1")
     app.include_router(stats.router, prefix="/api/v1")
+    app.include_router(classifier.router, prefix="/api/v1")
 
     return app
 
