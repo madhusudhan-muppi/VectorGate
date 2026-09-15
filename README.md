@@ -1,1 +1,242 @@
 # VectorGate
+
+VectorGate is a prototype for continuous mosquito/vector surveillance. An optical sensing tunnel uses an IR source and photodiode or phototransistor to capture light modulation as a flying insect crosses the beam. The longer-term system will acquire waveforms, extract flight features, classify conservatively, transmit detections, and visualize a network of nodes.
+
+## Stage 1: Python DSP prototype
+
+This stage implements only the reusable signal-processing path:
+
+- synthetic optical-wingbeat-like waveform generation
+- DC removal, Hann windowing, one-sided FFT, and configurable band limiting
+- dominant-frequency and feature extraction
+- deterministic automated tests
+- saved time-domain and spectrum plots
+
+The analysis accepts NumPy-compatible samples independently of the simulator, so recorded waveforms and future ESP32/ADC samples can use the same API. The current feature vector includes dominant frequency and magnitude, second/third harmonic ratios, RMS, peak-to-peak amplitude, spectral energy, and an estimated SNR.
+
+## Stage 2: event detection and sensor input contract
+
+Stage 2 adds a source-neutral pipeline:
+
+```text
+SensorRecording -> RMS/MAD event detector -> event windows -> Stage 1 DSP -> FlightEventResult
+```
+
+`SensorRecording` contains samples, sample rate, source, and optional node/environment metadata. The detector uses configurable frame length, hop, robust background threshold, minimum/maximum duration, merge gap, and pre/post padding. It is an explainable energy detector, not an ML classifier, and can still produce candidates for unusual background transients.
+
+The continuous simulator embeds smoothly ramped temporary events in background noise. The same pipeline accepts simulator data, recorded CSV data, and future ADC/serial data without changing the DSP analysis.
+
+## Setup on Windows PowerShell
+
+From the repository root:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+If PowerShell blocks activation, run the command below once for the current user, then activate the environment again:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+## Run the Stage 1 demo
+
+```powershell
+python -m software.scripts.demo
+```
+
+The demo prints the injected and detected frequencies plus all extracted features. It saves `waveform.png` and `spectrum.png` in `outputs`. A different output directory can be selected with `--output-dir`.
+
+## Run the Stage 2 event demo
+
+```powershell
+python -m software.scripts.event_demo
+```
+
+This generates a five-second continuous recording with approximately 500 Hz and 350 Hz events, detects both automatically, prints timing and frequency results, and saves `event_detection.png` in `outputs`.
+
+## CSV input format
+
+The canonical recorded format is:
+
+```text
+sample,value
+0,2048
+1,2051
+2,2046
+```
+
+`sample,value` requires an externally supplied sample rate. The loader also accepts `time_seconds,value` with strictly increasing, uniformly spaced timestamps and can infer the sample rate from them. Malformed, empty, non-finite, or inconsistent files are rejected. See [docs/HARDWARE_SOFTWARE_CONTRACT.md](docs/HARDWARE_SOFTWARE_CONTRACT.md) for the hardware handoff.
+
+## Run tests
+
+```powershell
+python -m pytest
+```
+
+The suite includes the Stage 1 regression tests plus event detection, event timing, short-transient rejection, gap merging, CSV validation, metadata propagation, and an off-bin 517.3 Hz FFT test.
+
+## Scientific scope and limitations
+
+The synthetic waveform, event stream, and any rotating/slotted calibration-disc result validate the sensing and DSP chain only. They do not validate mosquito species classification accuracy. Dominant or fundamental wingbeat frequency is one feature, not a unique species identifier. Temperature and humidity are context features, not species identifiers. Species-level claims require labelled biological validation and additional features such as harmonic structure, spectral energy, signal quality, event duration, temperature, and humidity. No production classifier, dashboard, map UI, or ESP32 firmware is included in the current prototype.
+
+## Stage 3: FastAPI backend and persistent detection store
+
+Stage 3 adds a local SQLite-backed API:
+
+```text
+Stage 2 FlightEventResult -> validated API payload -> SQLite detection store -> query/summary endpoints
+```
+
+The backend uses SQLAlchemy behind repository helpers so PostgreSQL can replace SQLite later. Tables are initialized automatically. The default database is `data/vectorgate.db`; set `VECTORGATE_DATABASE_URL` to use another SQLAlchemy URL. The local database and journal files are ignored by Git.
+
+### Start the backend
+
+```powershell
+python -m uvicorn backend.app.main:app --reload
+```
+
+Swagger/OpenAPI is available at `http://127.0.0.1:8000/docs`. The API is a local Buildathon prototype with no authentication. CORS defaults to `http://localhost:3000` and `http://localhost:5173`; override with a comma-separated `VECTORGATE_CORS_ORIGINS` value.
+
+### API overview
+
+- `GET /api/v1/health` checks API/database availability.
+- `POST /api/v1/nodes`, `GET /api/v1/nodes`, and `GET /api/v1/nodes/{node_id}` manage fixed manually configured nodes.
+- `POST /api/v1/detections`, `GET /api/v1/detections`, and `GET /api/v1/detections/{id}` ingest and query raw DSP detections.
+- `GET /api/v1/stats/summary` returns node and detection counts.
+- `GET /api/v1/nodes/{node_id}/activity` returns deterministic time buckets.
+- `GET /api/v1/map/nodes` returns observed detection activity with configured coordinates for the future map.
+
+Classification fields are nullable and no species is inferred from frequency. A DSP detection with no class or confidence is valid.
+
+### Run the demo publisher
+
+Start the backend first, then in another PowerShell terminal run:
+
+```powershell
+python -m backend.scripts.publisher
+```
+
+The publisher registers `VG-DEMO-01` when needed, generates a continuous Stage 2 fixture, detects its events, converts the resulting `FlightEventResult` objects, and POSTs them to the API. Its demo coordinates are explicitly labelled as a synthetic fixture, not a physical location. Use `--base-url` and `--node-id` to target another local API/node.
+
+### Run all tests
+
+```powershell
+python -m pytest -q
+```
+
+Backend tests use isolated temporary SQLite files and do not modify the development database.
+
+## Stage 4: live surveillance dashboard
+
+Stage 4 adds a React/Vite command view consuming the real Stage 3 API:
+
+```text
+FastAPI / SQLite -> centralized frontend API client -> KPIs / Leaflet map / feed / activity chart
+```
+
+The dashboard lives in `frontend/` and uses React, TypeScript, Leaflet with OpenStreetMap attribution, Recharts, and plain CSS. It polls backend telemetry every few seconds, shows backend offline state without crashing, displays UTC timestamps in the browser's local timezone, and keeps unclassified detections visibly unclassified.
+
+### Buildathon Demo Startup
+
+Terminal 1, backend:
+
+```powershell
+python -m uvicorn backend.app.main:app --reload
+```
+
+Terminal 2, synthetic dashboard data:
+
+```powershell
+python -m backend.scripts.seed_demo --reset
+```
+
+This creates six clearly labelled DEMO nodes around public Chennai-area landmarks and synthetic historical detections with varied activity. It does not run automatically on backend startup and does not represent real surveillance evidence.
+
+Terminal 3, frontend:
+
+```powershell
+Push-Location frontend
+npm install
+Copy-Item .env.example .env
+npm run dev
+Pop-Location
+```
+
+Open `http://127.0.0.1:5173`. The frontend API URL is configured by `frontend/.env` using `VITE_API_BASE_URL`.
+
+Optional Terminal 4, continuous presentation telemetry:
+
+```powershell
+python -m backend.scripts.live_demo --interval 8
+```
+
+The live demo rotates through DEMO nodes and synthetic frequencies using the existing Stage 2 generator, detector, and feature bridge. Stop it with Ctrl+C. Build the frontend for production with:
+
+```powershell
+Push-Location frontend
+npm run build
+Pop-Location
+```
+
+The dashboard visualizes observed VectorGate detection activity only. It does not display dengue risk, infection risk, or species identification. Synthetic DEMO nodes and detections are labelled for presentation use, and missing classification confidence is never fabricated.
+
+## Stage 5: classification and UNKNOWN rejection
+
+Stage 5 adds an optional, explicitly synthetic classification layer after DSP:
+
+```text
+FlightEventResult -> stable feature vector -> cached Random Forest -> class or UNKNOWN -> SQLite/dashboard
+```
+
+The exact feature order is:
+
+```text
+dominant_frequency_hz,
+second_harmonic_ratio,
+third_harmonic_ratio,
+rms,
+peak_to_peak,
+spectral_energy,
+estimated_snr_db,
+event_duration_seconds
+```
+
+Node ID, timestamps, coordinates, and environmental context are not classifier features. Temperature and humidity remain contextual metadata.
+
+### Synthetic demonstration model
+
+Install the added `scikit-learn` dependency and train the deterministic demonstration artifact:
+
+```powershell
+python -m software.classifier.train_demo
+```
+
+This creates `software/classifier/artifacts/vectorgate_demo_rf.pkl` and its JSON metadata. It uses overlapping artificial `DEMO_CLASS_A`, `DEMO_CLASS_B`, and `DEMO_CLASS_C` distributions. The model version is `vectorgate-demo-rf-v1`, and the default UNKNOWN threshold is `0.62`.
+
+Classification is disabled by default to preserve Stage 3 compatibility. Enable it for a local demonstration with:
+
+```powershell
+$env:VECTORGATE_CLASSIFIER_ENABLED = "1"
+python -m uvicorn backend.app.main:app --reload
+```
+
+Inspect readiness and metadata at `GET /api/v1/classifier/status`. The endpoint labels the training data as `synthetic_demo` and exposes synthetic validation metrics only.
+
+If the model confidence is below the threshold, the feature vector is invalid, estimated SNR is below the quality floor, or the artifact is unavailable, the result is `UNKNOWN`. UNKNOWN means the current model lacks sufficient evidence for one of its artificial known classes; it does not mean another species was identified. When classification is disabled or unavailable, existing detections remain valid with nullable `predicted_class`, `confidence`, and `model_version`.
+
+The dashboard shows `DEMO CLASSIFIER`, the model version, synthetic-model labeling, and filters for `ALL`, `CLASSIFIED`, `UNKNOWN`, and `UNCLASSIFIED`. It never converts synthetic labels into mosquito species names.
+
+### Path to biological validation
+
+A deployment classifier would require recordings from known mosquito specimens, expert or entomologist-confirmed labels, representative environmental conditions, separated train/validation/test data, evaluation across devices/locations/time, and calibration plus domain-shift testing. Current Stage 5 validates the software/ML pipeline and open-set rejection architecture, not species-identification accuracy.
+
+### Review-mode dashboard cues
+
+The dashboard marks seeded/published DEMO nodes as `DEMO TELEMETRY / SYNTHETIC DATA`, shows the explanatory signal path from optical sensor through DSP, features, classifier, and network map, and keeps the recent feed bounded with internal scrolling. Internal model labels remain unchanged in the API; the UI presents them as `Pattern A/B/C (Synthetic)`. `UNKNOWN` is shown separately from `UNCLASSIFIED`: it means the best known-class probability did not meet the rejection threshold, not that another species was identified.
+
+The deterministic demo seed intentionally creates quiet, elevated, and high observed-activity marker levels and spreads records over multiple days. This makes `TOTAL DETECTIONS` and `LAST 24 HOURS` distinct without hardcoding dashboard values. All map activity remains observed demo detection activity, never disease risk.

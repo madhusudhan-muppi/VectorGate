@@ -1,0 +1,49 @@
+{
+  "model_version": "vectorgate-demo-rf-v1",
+  "model_type": "RandomForestClassifier",
+  "feature_names": [
+    "dominant_frequency_hz",
+    "second_harmonic_ratio",
+    "third_harmonic_ratio",
+    "rms",
+    "peak_to_peak",
+    "spectral_energy",
+    "estimated_snr_db",
+    "event_duration_seconds"
+  ],
+  "training_data_type": "synthetic_demo",
+  "created_at": "2026-09-15T08:15:42.918688+00:00",
+  "class_names": [
+    "DEMO_CLASS_A",
+    "DEMO_CLASS_B",
+    "DEMO_CLASS_C"
+  ],
+  "unknown_threshold": 0.62,
+  "random_seed": 20260915,
+  "synthetic_training_samples": 405,
+  "synthetic_validation_metrics": {
+    "label": "SYNTHETIC DEMONSTRATION VALIDATION",
+    "accuracy": 0.8518518518518519,
+    "macro_f1": 0.84955290268626,
+    "confusion_matrix": [
+      [
+        39,
+        5,
+        1
+      ],
+      [
+        11,
+        32,
+        2
+      ],
+      [
+        0,
+        1,
+        44
+      ]
+    ],
+    "validation_samples": 135,
+    "rejected_as_unknown_at_threshold": 0.3037037037037037
+  },
+  "python_version": "3.14.0"
+}
