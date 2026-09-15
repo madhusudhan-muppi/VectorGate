@@ -61,3 +61,9 @@ def test_feature_payload_contains_required_fields():
         "spectral_energy",
         "estimated_snr_db",
     }
+
+
+def test_awkward_frequency_is_within_fft_resolution():
+    features = analyze(517.3)
+    fft_resolution = SAMPLE_RATE / (SAMPLE_RATE * DURATION)
+    assert abs(features.dominant_frequency_hz - 517.3) <= fft_resolution
