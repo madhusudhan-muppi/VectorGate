@@ -130,3 +130,57 @@ python -m pytest -q
 ```
 
 Backend tests use isolated temporary SQLite files and do not modify the development database.
+
+## Stage 4: live surveillance dashboard
+
+Stage 4 adds a React/Vite command view consuming the real Stage 3 API:
+
+```text
+FastAPI / SQLite -> centralized frontend API client -> KPIs / Leaflet map / feed / activity chart
+```
+
+The dashboard lives in `frontend/` and uses React, TypeScript, Leaflet with OpenStreetMap attribution, Recharts, and plain CSS. It polls backend telemetry every few seconds, shows backend offline state without crashing, displays UTC timestamps in the browser's local timezone, and keeps unclassified detections visibly unclassified.
+
+### Buildathon Demo Startup
+
+Terminal 1, backend:
+
+```powershell
+python -m uvicorn backend.app.main:app --reload
+```
+
+Terminal 2, synthetic dashboard data:
+
+```powershell
+python -m backend.scripts.seed_demo --reset
+```
+
+This creates six clearly labelled DEMO nodes around public Chennai-area landmarks and synthetic historical detections with varied activity. It does not run automatically on backend startup and does not represent real surveillance evidence.
+
+Terminal 3, frontend:
+
+```powershell
+Push-Location frontend
+npm install
+Copy-Item .env.example .env
+npm run dev
+Pop-Location
+```
+
+Open `http://127.0.0.1:5173`. The frontend API URL is configured by `frontend/.env` using `VITE_API_BASE_URL`.
+
+Optional Terminal 4, continuous presentation telemetry:
+
+```powershell
+python -m backend.scripts.live_demo --interval 8
+```
+
+The live demo rotates through DEMO nodes and synthetic frequencies using the existing Stage 2 generator, detector, and feature bridge. Stop it with Ctrl+C. Build the frontend for production with:
+
+```powershell
+Push-Location frontend
+npm run build
+Pop-Location
+```
+
+The dashboard visualizes observed VectorGate detection activity only. It does not display dengue risk, infection risk, or species identification. Synthetic DEMO nodes and detections are labelled for presentation use, and missing classification confidence is never fabricated.
