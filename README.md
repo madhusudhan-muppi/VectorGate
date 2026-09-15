@@ -82,4 +82,51 @@ The suite includes the Stage 1 regression tests plus event detection, event timi
 
 ## Scientific scope and limitations
 
-The synthetic waveform, event stream, and any rotating/slotted calibration-disc result validate the sensing and DSP chain only. They do not validate mosquito species classification accuracy. Dominant or fundamental wingbeat frequency is one feature, not a unique species identifier. Temperature and humidity are context features, not species identifiers. Species-level claims require labelled biological validation and additional features such as harmonic structure, spectral energy, signal quality, event duration, temperature, and humidity. No production classifier, backend, database, dashboard, or ESP32 firmware is included in Stage 2.
+The synthetic waveform, event stream, and any rotating/slotted calibration-disc result validate the sensing and DSP chain only. They do not validate mosquito species classification accuracy. Dominant or fundamental wingbeat frequency is one feature, not a unique species identifier. Temperature and humidity are context features, not species identifiers. Species-level claims require labelled biological validation and additional features such as harmonic structure, spectral energy, signal quality, event duration, temperature, and humidity. No production classifier, dashboard, map UI, or ESP32 firmware is included in the current prototype.
+
+## Stage 3: FastAPI backend and persistent detection store
+
+Stage 3 adds a local SQLite-backed API:
+
+```text
+Stage 2 FlightEventResult -> validated API payload -> SQLite detection store -> query/summary endpoints
+```
+
+The backend uses SQLAlchemy behind repository helpers so PostgreSQL can replace SQLite later. Tables are initialized automatically. The default database is `data/vectorgate.db`; set `VECTORGATE_DATABASE_URL` to use another SQLAlchemy URL. The local database and journal files are ignored by Git.
+
+### Start the backend
+
+```powershell
+python -m uvicorn backend.app.main:app --reload
+```
+
+Swagger/OpenAPI is available at `http://127.0.0.1:8000/docs`. The API is a local Buildathon prototype with no authentication. CORS defaults to `http://localhost:3000` and `http://localhost:5173`; override with a comma-separated `VECTORGATE_CORS_ORIGINS` value.
+
+### API overview
+
+- `GET /api/v1/health` checks API/database availability.
+- `POST /api/v1/nodes`, `GET /api/v1/nodes`, and `GET /api/v1/nodes/{node_id}` manage fixed manually configured nodes.
+- `POST /api/v1/detections`, `GET /api/v1/detections`, and `GET /api/v1/detections/{id}` ingest and query raw DSP detections.
+- `GET /api/v1/stats/summary` returns node and detection counts.
+- `GET /api/v1/nodes/{node_id}/activity` returns deterministic time buckets.
+- `GET /api/v1/map/nodes` returns observed detection activity with configured coordinates for the future map.
+
+Classification fields are nullable and no species is inferred from frequency. A DSP detection with no class or confidence is valid.
+
+### Run the demo publisher
+
+Start the backend first, then in another PowerShell terminal run:
+
+```powershell
+python -m backend.scripts.publisher
+```
+
+The publisher registers `VG-DEMO-01` when needed, generates a continuous Stage 2 fixture, detects its events, converts the resulting `FlightEventResult` objects, and POSTs them to the API. Its demo coordinates are explicitly labelled as a synthetic fixture, not a physical location. Use `--base-url` and `--node-id` to target another local API/node.
+
+### Run all tests
+
+```powershell
+python -m pytest -q
+```
+
+Backend tests use isolated temporary SQLite files and do not modify the development database.
