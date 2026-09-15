@@ -2,11 +2,12 @@ import { Activity, CircleHelp, RefreshCw, Wifi, WifiOff } from 'lucide-react'
 
 type HeaderProps = {
   online: boolean
+  isDemoTelemetry: boolean
   lastRefresh: Date | null
   onRefresh: () => void
 }
 
-export function Header({ online, lastRefresh, onRefresh }: HeaderProps) {
+export function Header({ online, isDemoTelemetry, lastRefresh, onRefresh }: HeaderProps) {
   return (
     <header className="topbar">
       <div className="brand-lockup">
@@ -21,6 +22,7 @@ export function Header({ online, lastRefresh, onRefresh }: HeaderProps) {
           {online ? <Wifi size={15} /> : <WifiOff size={15} />}
           <span>{online ? 'SYSTEM ONLINE' : 'SYSTEM OFFLINE'}</span>
         </div>
+        {isDemoTelemetry && <div className="demo-state"><span>DEMO TELEMETRY</span><strong>SYNTHETIC DATA</strong></div>}
         <div className="refresh-meta">
           <span>LAST SYNC</span>
           <strong>{lastRefresh ? lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'WAITING'}</strong>

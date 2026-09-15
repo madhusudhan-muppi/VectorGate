@@ -234,3 +234,9 @@ The dashboard shows `DEMO CLASSIFIER`, the model version, synthetic-model labeli
 ### Path to biological validation
 
 A deployment classifier would require recordings from known mosquito specimens, expert or entomologist-confirmed labels, representative environmental conditions, separated train/validation/test data, evaluation across devices/locations/time, and calibration plus domain-shift testing. Current Stage 5 validates the software/ML pipeline and open-set rejection architecture, not species-identification accuracy.
+
+### Review-mode dashboard cues
+
+The dashboard marks seeded/published DEMO nodes as `DEMO TELEMETRY / SYNTHETIC DATA`, shows the explanatory signal path from optical sensor through DSP, features, classifier, and network map, and keeps the recent feed bounded with internal scrolling. Internal model labels remain unchanged in the API; the UI presents them as `Pattern A/B/C (Synthetic)`. `UNKNOWN` is shown separately from `UNCLASSIFIED`: it means the best known-class probability did not meet the rejection threshold, not that another species was identified.
+
+The deterministic demo seed intentionally creates quiet, elevated, and high observed-activity marker levels and spreads records over multiple days. This makes `TOTAL DETECTIONS` and `LAST 24 HOURS` distinct without hardcoding dashboard values. All map activity remains observed demo detection activity, never disease risk.

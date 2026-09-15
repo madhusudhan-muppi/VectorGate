@@ -85,12 +85,16 @@ def seed_demo(reset: bool = False) -> int:
             db.delete(detection)
         db.commit()
 
-        counts = [9, 5, 13, 2, 7, 0]
+        counts = [14, 10, 7, 3, 2, 0]
+        recent_counts = [12, 8, 5, 2, 1, 0]
         frequencies = [500.0, 350.0, 700.0, 517.3, 420.0, 0.0]
         total = 0
-        for node_index, ((node_id, *_), count) in enumerate(zip(DEMO_NODES, counts, strict=True)):
+        for node_index, ((node_id, *_), count, recent_count) in enumerate(zip(DEMO_NODES, counts, recent_counts, strict=True)):
             for event_index in range(count):
-                hours_ago = 0.25 + ((event_index * 17 + node_index * 11) % 96)
+                if event_index < recent_count:
+                    hours_ago = 0.25 + event_index * 0.6
+                else:
+                    hours_ago = 30.0 + ((event_index * 17 + node_index * 11) % 96)
                 recorded_at = now - timedelta(hours=hours_ago)
                 db.add(_detection(node_id, recorded_at, frequencies[node_index], 0.55 + (event_index % 4) * 0.08, event_index))
                 total += 1
