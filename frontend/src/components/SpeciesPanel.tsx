@@ -72,6 +72,10 @@ function DiseaseDetail({ reference, disclaimer }: { reference: SpeciesReference;
   }
 
   return <div className="species-detail">
+    {reference.image && <figure className="species-photo">
+      <img src={reference.image} alt={`${reference.scientific_name} mosquito`} />
+      <figcaption><i>{reference.scientific_name}</i></figcaption>
+    </figure>}
     <div className="species-detail-head">
       <div>
         <span className="eyebrow"><Bug size={13} /> SPECIES PROFILE</span>
@@ -157,6 +161,9 @@ export function SpeciesPanel({ detections, nodes, catalog, selectedNodeId, onSel
             disabled={!item.reference}
           >
             <div className="species-row-head">
+              {item.reference?.image
+                ? <img className="species-thumb" src={item.reference.image} alt="" />
+                : <span className="species-thumb placeholder" aria-hidden="true" />}
               <strong>{item.reference && !item.reference.is_unknown ? <i>{item.reference.scientific_name}</i> : item.label}</strong>
               <span>{item.count}</span>
             </div>

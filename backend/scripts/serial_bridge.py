@@ -22,7 +22,7 @@ import numpy as np
 from backend.app.services.bridge import detection_payload_from_event
 from backend.scripts.publisher import request_json
 from software.data.models import SensorRecording
-from software.dsp.pipeline import analyze_sensor_recording
+from software.dsp.pipeline import analyze_sensor_recording, analyze_whole_recording
 
 # VIT Chennai campus, Vandalur-Kelambakkam Road.
 DEFAULT_NODE = {
@@ -72,6 +72,7 @@ def publish_window(
     counts: np.ndarray,
     sample_rate_hz: float,
     send_samples: bool = True,
+    calibration: bool = False,
 ) -> dict | None:
     recording = SensorRecording(
         samples=counts_to_volts(counts),
@@ -80,21 +81,31 @@ def publish_window(
         start_time=datetime.now(timezone.utc),
         node_id=node_id,
     )
-    events = analyze_sensor_recording(recording)
-    if not events:
-        print("  no flight event in this window (below the detector's trigger)")
-        return None
-
-    payload = detection_payload_from_event(events[0], recording=recording).model_dump(mode="json")
-    if send_samples:
+    if calibration:
+        # Shared with the library-clip demo, so both take the same DSP path.
+        event = analyze_whole_recording(recording)
+    else:
+        events = analyze_sensor_recording(recording)
+        if not events:
+            print(
+                "  no flight event in this window. The detector wants a burst against a quiet "
+                "background; a continuously running chopper is steady state. Use --calibration "
+                "to analyse the whole window instead."
+            )
+            return None
         event = events[0]
+
+    payload = detection_payload_from_event(event, recording=recording).model_dump(mode="json")
+    if send_samples:
         payload["samples"] = [float(value) for value in event.samples]
         payload["sample_rate_hz"] = sample_rate_hz
     _, response = request_json(base_url, "POST", "/api/v1/detections", payload)
     return response
 
 
-def run_bridge(port: str, baud: int, base_url: str, node: dict, send_samples: bool) -> None:
+def run_bridge(
+    port: str, baud: int, base_url: str, node: dict, send_samples: bool, calibration: bool = False
+) -> None:
     try:
         import serial
     except ImportError:
@@ -102,6 +113,9 @@ def run_bridge(port: str, baud: int, base_url: str, node: dict, send_samples: bo
 
     ensure_node(base_url, node)
     print(f"listening on {port} at {baud} baud; publishing to {base_url}")
+    if calibration:
+        print("CALIBRATION MODE: whole windows are analysed, transient detection is off.")
+        print("This validates the optical and DSP chain, not species identification.")
     print("Ctrl+C to stop.\n")
 
     with serial.Serial(port, baud, timeout=2) as link:
@@ -136,15 +150,31 @@ def run_bridge(port: str, baud: int, base_url: str, node: dict, send_samples: bo
                 if rate <= 0:
                     print("  dropped a window: node did not report a sample rate")
                     continue
+                clip_lo = int(header.get("clip_lo", 0) or 0)
+                clip_hi = int(header.get("clip_hi", 0) or 0)
                 print(
                     f"window seq={header.get('seq', '?')} rate={rate:.1f} Hz "
-                    f"p2p={header.get('p2p', '?')} reason={header.get('reason', '?')}"
+                    f"mean={header.get('mean', '?')} p2p={header.get('p2p', '?')} "
+                    f"clip_lo={clip_lo} clip_hi={clip_hi} reason={header.get('reason', '?')}"
                 )
-                if int(header.get("clip_lo", 0) or 0) or int(header.get("clip_hi", 0) or 0):
-                    print("  note: window contains clipped samples; waveform shape is degraded")
+                # Which rail the waveform is stuck against decides the fix, so
+                # say it rather than reporting "clipped" and leaving it ambiguous.
+                if clip_lo or clip_hi:
+                    if clip_lo >= clip_hi:
+                        print(
+                            f"  clipping at the ADC floor ({clip_lo} samples): the detector output is "
+                            "too low. Raise it - more IR (lower the emitter resistor) or a larger "
+                            "load resistor - until the clear-beam level sits near 2000 counts."
+                        )
+                    else:
+                        print(
+                            f"  clipping at the ADC ceiling ({clip_hi} samples): the detector output is "
+                            "too high. Lower the load resistor (10k -> 2.2k -> 1k) or widen the gap "
+                            "until the clear-beam level sits near 2000 counts."
+                        )
                 try:
                     response = publish_window(
-                        base_url, node["node_id"], np.asarray(values), rate, send_samples
+                        base_url, node["node_id"], np.asarray(values), rate, send_samples, calibration
                     )
                 except Exception as error:
                     print(f"  publish failed: {error}")
@@ -187,6 +217,11 @@ def main() -> None:
         action="store_true",
         help="omit the waveform, so the species model cannot classify the detection",
     )
+    parser.add_argument(
+        "--calibration",
+        action="store_true",
+        help="analyse each whole window instead of waiting for a transient, for chopper/LED tests",
+    )
     args = parser.parse_args()
 
     node = {
@@ -198,10 +233,20 @@ def main() -> None:
         "active": True,
     }
     try:
-        run_bridge(args.port, args.baud, args.base_url, node, not args.no_samples)
+        run_bridge(
+            args.port, args.baud, args.base_url, node, not args.no_samples, args.calibration
+        )
     except KeyboardInterrupt:
         print("\nbridge stopped.")
         sys.exit(0)
+    except RuntimeError as error:
+        # Almost always a backend that is not running. A traceback here tells
+        # the operator nothing they can act on.
+        raise SystemExit(
+            f"{error}\n\nIs the API up? Start it with:\n"
+            "  VECTORGATE_WINGBEATS_ENABLED=1 VectorGate_venv/bin/python "
+            "-m uvicorn backend.app.main:app --reload"
+        ) from None
 
 
 if __name__ == "__main__":

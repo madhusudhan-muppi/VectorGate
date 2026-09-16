@@ -67,6 +67,8 @@ class SpeciesReference:
     evidence_level: str
     sources: list[str]
     notes: str = ""
+    #: Served from the frontend's public/ folder, not the API host.
+    image: str = ""
     is_unknown: bool = False
 
     def as_dict(self) -> dict[str, Any]:
@@ -84,6 +86,7 @@ _DENGUE_GROUP = [
 SPECIES: tuple[SpeciesReference, ...] = (
     SpeciesReference(
         key="Ae. aegypti",
+        image="/species/aedes-aegypti.jpg",
         scientific_name="Aedes aegypti",
         common_name="Yellow fever mosquito",
         genus="Aedes",
@@ -107,6 +110,7 @@ SPECIES: tuple[SpeciesReference, ...] = (
     ),
     SpeciesReference(
         key="Ae. albopictus",
+        image="/species/aedes-albopictus.jpg",
         scientific_name="Aedes albopictus",
         common_name="Asian tiger mosquito",
         genus="Aedes",
@@ -123,6 +127,7 @@ SPECIES: tuple[SpeciesReference, ...] = (
     ),
     SpeciesReference(
         key="An. gambiae",
+        image="/species/anopheles-gambiae.jpg",
         scientific_name="Anopheles gambiae",
         common_name="African malaria mosquito",
         genus="Anopheles",
@@ -139,6 +144,7 @@ SPECIES: tuple[SpeciesReference, ...] = (
     ),
     SpeciesReference(
         key="An. arabiensis",
+        image="/species/anopheles-arabiensis.jpg",
         scientific_name="Anopheles arabiensis",
         common_name="Member of the An. gambiae complex",
         genus="Anopheles",
@@ -155,6 +161,7 @@ SPECIES: tuple[SpeciesReference, ...] = (
     ),
     SpeciesReference(
         key="C. quinquefasciatus",
+        image="/species/culex-quinquefasciatus.jpg",
         scientific_name="Culex quinquefasciatus",
         common_name="Southern house mosquito",
         genus="Culex",
@@ -179,6 +186,7 @@ SPECIES: tuple[SpeciesReference, ...] = (
     ),
     SpeciesReference(
         key="C. pipiens",
+        image="/species/culex-pipiens.jpg",
         scientific_name="Culex pipiens",
         common_name="Northern house mosquito",
         genus="Culex",

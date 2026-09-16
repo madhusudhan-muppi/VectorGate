@@ -87,6 +87,7 @@ export type SpeciesReference = {
   evidence_level: string
   sources: string[]
   notes: string
+  image: string
   is_unknown: boolean
 }
 

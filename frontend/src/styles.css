@@ -91,3 +91,13 @@ button { font: inherit; }
 .disease-disclaimer svg { flex-shrink: 0; margin-top: 1px; color: var(--amber); }
 
 @media (max-width: 1000px) { .species-layout { grid-template-columns: 1fr; } }
+
+/* ---- Species photographs ---- */
+.species-photo { margin: 0 0 18px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: rgba(10, 16, 19, .6); position: relative; }
+.species-photo img { display: block; width: 100%; height: 190px; object-fit: cover; object-position: center; }
+.species-photo figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 14px 9px; font-size: .78rem; color: #dcece9; background: linear-gradient(transparent, rgba(6, 11, 13, .88)); }
+.species-thumb { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
+.species-thumb.placeholder { background: rgba(140, 161, 165, .12); display: inline-block; }
+.species-row-head { align-items: center; }
+.species-row-head strong { flex: 1; }
+@media (max-width: 1000px) { .species-photo img { height: 150px; } }
