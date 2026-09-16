@@ -52,7 +52,7 @@ export function MapPanel({ nodes, selectedNodeId, onSelectNode }: MapPanelProps)
   }, [nodes, selectedNodeId, onSelectNode, validNodes])
 
   return <section className="panel map-panel">
-    <div className="panel-heading map-heading"><div><span className="eyebrow"><Crosshair size={13} /> GEOGRAPHIC VIEW</span><h2>Observed vector activity</h2></div><div className="map-legend"><span><i className="legend-dot quiet" />Quiet</span><span><i className="legend-dot elevated" />Elevated</span><span><i className="legend-dot high" />High</span></div></div>
+    <div className="panel-heading map-heading"><div><span className="eyebrow"><Crosshair size={13} /> GEOGRAPHIC VIEW</span><h2>Where the nodes are</h2></div><div className="map-legend"><span><i className="legend-dot quiet" />Quiet</span><span><i className="legend-dot elevated" />Elevated</span><span><i className="legend-dot high" />High</span></div></div>
     <div className="map-stage"><div className="leaflet-host" ref={mapElement} />
       {nodes.length === 0 && <div className="map-empty"><MapPinOff size={22} /><strong>No nodes configured</strong><span>Waiting for VectorGate telemetry...</span></div>}
       {syntheticNodes > 0 && <div className="map-note"><MapPinOff size={14} /> {syntheticNodes} synthetic coordinate{syntheticNodes > 1 ? 's' : ''} withheld from map</div>}

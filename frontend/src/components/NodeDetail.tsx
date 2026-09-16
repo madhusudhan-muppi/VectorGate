@@ -5,7 +5,7 @@ import { StatusPill } from './StatusPill'
 type NodeDetailProps = { node: MapNode | null; detections: Detection[] }
 
 export function NodeDetail({ node, detections }: NodeDetailProps) {
-  if (!node) return <section className="panel detail-panel empty-detail"><div className="eyebrow"><MapPinned size={13} /> NODE DETAIL</div><strong>Select a mapped node</strong><span>Choose a marker to inspect current telemetry.</span></section>
+  if (!node) return <section className="panel detail-panel empty-detail"><div className="eyebrow"><MapPinned size={13} /> NODE DETAIL</div><strong>Select a location</strong><span>Pick a node above or on the map to see its sensor readings.</span></section>
   const latest = detections.find((detection) => detection.node_id === node.node_id)
   return <section className="panel detail-panel"><div className="panel-heading"><div><span className="eyebrow"><MapPinned size={13} /> NODE DETAIL</span><h2>{node.name}</h2></div><StatusPill active={node.active} /></div>
     <div className="node-id">{node.node_id}</div><p className="location-label">{node.location_label}</p>

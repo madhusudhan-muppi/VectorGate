@@ -12,6 +12,13 @@ export type ClassifierStatus = {
   unknown_threshold: number | null
   classes: string[]
   synthetic_validation_metrics?: { label: string; accuracy: number; macro_f1: number; rejected_as_unknown_at_threshold: number }
+  dataset?: string | null
+  split?: string | null
+  session_grouped_accuracy?: number | null
+  training_sample_rate_hz?: number | null
+  feature_set?: string | null
+  n_features?: number | null
+  validation_note?: string | null
   load_error?: string | null
 }
 
@@ -62,9 +69,37 @@ export type ActivityBucket = {
   count: number
 }
 
+export type Disease = {
+  name: string
+  group: string
+  note: string
+}
+
+export type SpeciesReference = {
+  key: string
+  scientific_name: string
+  common_name: string
+  genus: string
+  vector_status: string
+  headline_disease: string
+  diseases: Disease[]
+  india_relevance: string
+  evidence_level: string
+  sources: string[]
+  notes: string
+  is_unknown: boolean
+}
+
+export type SpeciesCatalog = {
+  disclaimer: string
+  transmission_groups: Record<string, string>
+  species: SpeciesReference[]
+}
+
 export type ApiState = {
   health: Health | null
   classifier: ClassifierStatus | null
+  speciesCatalog: SpeciesCatalog | null
   summary: Summary | null
   nodes: MapNode[]
   detections: Detection[]

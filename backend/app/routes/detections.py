@@ -12,6 +12,7 @@ from ..repositories.nodes import get_node
 from ..schemas import DetectionCreate, DetectionResponse
 from ..services.classifier import classify_detection
 from ..services.time import ensure_utc, utc_now
+from ..services.wingbeats import classify_samples
 
 router = APIRouter(prefix="/detections", tags=["detections"])
 
@@ -21,7 +22,19 @@ def ingest_detection(payload: DetectionCreate, db: Session = Depends(get_db)) ->
     if get_node(db, payload.node_id) is None:
         raise HTTPException(status_code=404, detail="node not found")
     values = payload.model_dump()
-    classification = classify_detection(values)
+    # Transient inputs: classified on the way in, never stored. They are read
+    # from the model rather than from the dump, which excludes them by design so
+    # they never reach the response body.
+    samples = payload.samples
+    sample_rate_hz = payload.sample_rate_hz
+    values.pop("samples", None)
+    values.pop("sample_rate_hz", None)
+
+    classification = None
+    if samples is not None and sample_rate_hz:
+        classification = classify_samples(samples, sample_rate_hz)
+    if classification is None:
+        classification = classify_detection(values)
     if classification is not None:
         values.update(classification)
     detection = Detection(**values, received_at=utc_now())

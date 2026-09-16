@@ -7,3 +7,11 @@ data/*.db
 data/*.db-*
 frontend/node_modules/
 frontend/dist/
+VectorGate_venv/
+
+# WINGBEATS corpus (3.2 GB) and everything derived from it
+Wingbeats/
+subset/
+data/wingbeats_*.csv
+data/*.joblib
+.~lock.*#

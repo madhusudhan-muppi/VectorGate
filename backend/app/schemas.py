@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+#: Upper bound on a transient sample batch. At 8 kHz this is ~8 seconds, far
+#: more than one flight event, and it keeps a malformed node from posting an
+#: unbounded payload.
+MAX_SAMPLES = 64_000
 
 
 def _aware_utc(value: datetime) -> datetime:
@@ -53,7 +59,21 @@ class DetectionCreate(BaseModel):
     confidence: float | None = Field(default=None, ge=0, le=1)
     model_version: str | None = Field(default=None, max_length=100)
 
+    # Transient: used to classify on ingest, never persisted. A node sends the
+    # waveform so the server extracts features with the same code the model was
+    # trained on, rather than the node reimplementing 25 features in firmware.
+    samples: list[float] | None = Field(default=None, max_length=MAX_SAMPLES, exclude=True)
+    sample_rate_hz: float | None = Field(default=None, gt=0, exclude=True)
+
     _validate_recorded_at = field_validator("recorded_at")(_aware_utc)
+
+    @model_validator(mode="after")
+    def check_sample_batch(self) -> "DetectionCreate":
+        if self.samples is not None and self.sample_rate_hz is None:
+            raise ValueError("sample_rate_hz is required when samples are supplied")
+        if self.samples is not None and not all(math.isfinite(value) for value in self.samples):
+            raise ValueError("samples must be finite")
+        return self
 
     @field_validator(
         "dominant_frequency_hz",

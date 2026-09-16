@@ -38,3 +38,56 @@ button { font: inherit; }
 .app-footer { gap: 18px; color: #64797c; }
 @keyframes event-pulse { 0% { color: var(--teal); text-shadow: 0 0 0 transparent; } 35% { color: #f4fff9; text-shadow: 0 0 12px rgba(54, 194, 173, .75); } 100% { color: #d8ebe6; text-shadow: 0 0 0 transparent; } }
 @media (max-width: 700px) { .intro-actions { width: 100%; flex-direction: column; }.classifier-card, .data-honesty, .last-event { align-self: stretch; }.feed-tools { flex-direction: column; align-items: flex-end; gap: 4px; }.feed-filters { flex-wrap: wrap; justify-content: flex-end; }.pipeline-strip { justify-content: flex-start; } }
+
+/* ---- Species panel: the primary view ---- */
+.species-panel { margin-bottom: 22px; }
+.place-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 20px; }
+.place-picker button { background: var(--surface-hi); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 7px 15px; font-size: .78rem; letter-spacing: .02em; cursor: pointer; transition: all .15s ease; }
+.place-picker button:hover { color: #e8f1ef; border-color: rgba(54, 194, 173, .45); }
+.place-picker button.selected { background: rgba(54, 194, 173, .16); border-color: var(--teal); color: #d8faf3; font-weight: 600; }
+.species-layout { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 22px; align-items: start; }
+.species-ranking { display: flex; flex-direction: column; gap: 10px; }
+.species-row { text-align: left; background: var(--surface-hi); border: 1px solid var(--border); border-radius: 12px; padding: 13px 15px; cursor: pointer; color: inherit; transition: border-color .15s ease, background .15s ease; }
+.species-row:hover:not(:disabled) { border-color: rgba(54, 194, 173, .45); }
+.species-row.selected { border-color: var(--teal); background: rgba(54, 194, 173, .09); }
+.species-row.muted { opacity: .72; }
+.species-row:disabled { cursor: default; }
+.species-row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.species-row-head strong { font-size: 1rem; font-weight: 600; }
+.species-row-head span { font-family: 'Space Mono', monospace; font-size: 1.05rem; color: var(--teal); }
+.species-bar { height: 5px; border-radius: 999px; background: rgba(140, 161, 165, .16); margin: 9px 0 8px; overflow: hidden; }
+.species-bar span { display: block; height: 100%; border-radius: 999px; background: var(--muted); }
+.species-bar span.aedes { background: var(--red); }
+.species-bar span.anopheles { background: var(--amber); }
+.species-bar span.culex { background: var(--blue); }
+.species-row-foot { display: flex; justify-content: space-between; gap: 10px; font-size: .74rem; color: var(--muted); }
+
+.species-detail { background: var(--surface-hi); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; }
+.species-detail.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--muted); text-align: center; min-height: 200px; }
+.species-detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.species-detail-head h3 { margin: 6px 0 2px; font-size: 1.5rem; font-weight: 600; }
+.species-common { margin: 0; color: var(--muted); font-size: .85rem; }
+.vector-badge { font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+.vector-badge.aedes { border-color: rgba(227, 108, 101, .5); color: #f0a49f; background: rgba(227, 108, 101, .1); }
+.vector-badge.anopheles { border-color: rgba(234, 179, 101, .5); color: #f2cf9b; background: rgba(234, 179, 101, .1); }
+.vector-badge.culex { border-color: rgba(111, 178, 197, .5); color: #a5d2df; background: rgba(111, 178, 197, .1); }
+
+.disease-headline { margin: 18px 0 14px; padding: 14px 16px; border-radius: 12px; background: rgba(227, 108, 101, .09); border: 1px solid rgba(227, 108, 101, .28); }
+.disease-headline span { display: block; font-size: .65rem; letter-spacing: .1em; color: var(--muted); margin-bottom: 4px; }
+.disease-headline strong { font-size: 1.6rem; font-weight: 700; color: #f3b4af; letter-spacing: -.01em; }
+.disease-grid { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 18px; }
+.disease-chip { border: 1px solid var(--border); border-radius: 10px; padding: 9px 13px; background: rgba(10, 16, 19, .55); min-width: 128px; }
+.disease-chip strong { display: block; font-size: .92rem; font-weight: 600; }
+.disease-chip small { color: var(--muted); font-size: .7rem; }
+.disease-chip.arbovirus { border-left: 3px solid var(--red); }
+.disease-chip.parasite { border-left: 3px solid var(--amber); }
+.disease-chip.filarial { border-left: 3px solid var(--blue); }
+
+.species-facts { margin: 0 0 16px; display: flex; flex-direction: column; gap: 12px; }
+.species-facts dt { display: flex; align-items: center; gap: 6px; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.species-facts dd { margin: 0; font-size: .85rem; line-height: 1.5; }
+.species-unknown-note { color: var(--muted); font-size: .88rem; line-height: 1.6; margin-top: 14px; }
+.disease-disclaimer { display: flex; gap: 9px; align-items: flex-start; margin: 0; padding: 12px 14px; border-radius: 10px; background: rgba(234, 179, 101, .08); border: 1px solid rgba(234, 179, 101, .26); font-size: .76rem; line-height: 1.55; color: #e6d3ae; }
+.disease-disclaimer svg { flex-shrink: 0; margin-top: 1px; color: var(--amber); }
+
+@media (max-width: 1000px) { .species-layout { grid-template-columns: 1fr; } }

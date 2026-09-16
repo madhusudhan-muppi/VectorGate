@@ -1,4 +1,4 @@
-import type { ActivityBucket, ClassifierStatus, Detection, Health, MapNode, Summary } from '../types'
+import type { ActivityBucket, ClassifierStatus, Detection, Health, MapNode, SpeciesCatalog, Summary } from '../types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '')
 
@@ -30,7 +30,8 @@ export const api = {
   classifier: (signal?: AbortSignal) => request<ClassifierStatus>('/api/v1/classifier/status', signal),
   summary: (signal?: AbortSignal) => request<Summary>('/api/v1/stats/summary', signal),
   nodes: (signal?: AbortSignal) => request<MapNode[]>('/api/v1/map/nodes', signal),
-  detections: (signal?: AbortSignal) => request<Detection[]>('/api/v1/detections?limit=50', signal),
+  detections: (signal?: AbortSignal) => request<Detection[]>('/api/v1/detections?limit=200', signal),
+  species: (signal?: AbortSignal) => request<SpeciesCatalog>('/api/v1/species', signal),
   activity: (nodeId: string, signal?: AbortSignal) => request<ActivityBucket[]>(
     `/api/v1/nodes/${encodeURIComponent(nodeId)}/activity?bucket_seconds=3600`,
     signal,

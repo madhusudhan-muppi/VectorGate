@@ -5,6 +5,7 @@ import type { ActivityBucket, ApiState } from '../types'
 const initialState: ApiState = {
   health: null,
   classifier: null,
+  speciesCatalog: null,
   summary: null,
   nodes: [],
   detections: [],
@@ -50,6 +51,22 @@ export function useDashboardData(selectedNodeId: string | null) {
       window.clearInterval(timer)
     }
   }, [refresh])
+
+  // The species reference is static, so it is fetched once rather than polled.
+  useEffect(() => {
+    const controller = new AbortController()
+    const load = async () => {
+      try {
+        const speciesCatalog = await api.species(controller.signal)
+        setState((previous) => ({ ...previous, speciesCatalog }))
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setState((previous) => ({ ...previous, speciesCatalog: null }))
+      }
+    }
+    void load()
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     if (!selectedNodeId) {
